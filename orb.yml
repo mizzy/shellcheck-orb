@@ -108,6 +108,11 @@ jobs:
         description: |
           Override executor with a custom executor, for example, to choose a
           different version tag.
+      always_success:
+        type: boolean
+        default: false
+        description:
+          Return always success even if shellcheck fails
     steps:
       - checkout
       - run:
@@ -123,10 +128,17 @@ jobs:
             echo "SHELLCHECK_OPTS=$SHELLCHECK_OPTS"
             <</parameters.ignore>>
 
-            find '<<parameters.path>>' -not -path '<<parameters.exclude>>' \
+            COMMAND="find '<<parameters.path>>' \
+              -not -path '<<parameters.exclude>>' \
               -type f -name '<<parameters.pattern>>' | \
               xargs shellcheck --external-sources | \
-              tee -a '<<parameters.output>>'
+              tee -a '<<parameters.output>>'"
+
+            if [ "<<parameters.always_success>>" = "true" ]; then
+              COMMAND="$COMMAND || true"
+            fi
+
+            eval $COMMAND
       - store_artifacts:
           path: '<< parameters.output >>'
           destination: shellcheck
